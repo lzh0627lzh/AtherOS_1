@@ -18,7 +18,10 @@ g++ -g AtherOS_1.cpp -o AtherOS_1.exe
 ## Version
 AtherOS 1
 
-1.0.0(2610.1029)
+1.0.1(2610.1030)
+
+## Update Notes
+- Resolved several known issues.
 
 ## Notice
 This is a simulation project, NOT a real operating system kernel.

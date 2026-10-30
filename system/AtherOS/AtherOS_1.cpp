@@ -191,12 +191,12 @@ using namespace big_char;
 //!====================================================================
 
 namespace jsonaa {
-void init(json j) {
+void init(json &j) {
     string path = "..\\AtherOS_File\\setting.json";
     ifstream fin(path);
     j["system_download"] = false;
-    j["AtherOS_version"] = "1.0.0(2610.1029)";
-    j["AtherOS_vnum"] = 1010;
+    j["AtherOS_version"] = "1.0.1(2610.1030)";
+    j["AtherOS_vnum"] = 1011;
     j["Welcome_word"] = "欢迎!";
     j["Hash_1"] = Hash1("123456");
     j["Hash_2"] = Hash2("123456");
@@ -347,10 +347,9 @@ void Boot() {
     print_big("ATHEROS_1");
     cout.flush();
     cout << '\n';
-    Sleep(1000);
+    Sleep(rnd() % 2000 + 500);
     system("cls");
     cout.flush();
-
     system("cls");
     cout.flush();
     while (true) {
@@ -381,9 +380,6 @@ void Boot() {
 }
 
 void Time() {
-    int n;
-    cin >> n;
-
     time_t t = time(NULL);
     tm lt{};
     localtime_s(&lt, &t);
@@ -472,13 +468,21 @@ void Help() {
     cout << "2. about           查看系统信息" << '\n';
     cout << "3. change password 更改密码" << '\n';
     cout << "4. clean           清空屏幕" << '\n';
-    cout << "4. help            查看帮助" << '\n';
+    cout << "5. exit            退出系统" << '\n';
+    cout << "6. help            查看帮助" << '\n';
     return;
 }
 
 void Clean() {
     system("cls");
     cout.flush();
+    return;
+}
+
+void Ather_Exit(){
+    cout << "系统即将退出";
+    Sleep(1000);
+    exit(1);
     return;
 }
 
@@ -490,16 +494,18 @@ void ShellLoop() {
         int num = tokens.size();
         if (num == 0)
             continue;
-        if (tokens[0] == "time" && num == 1) {
+        if (num == 1 && tokens[0] == "time") {
             Time();
-        } else if (tokens[0] == "about" && num == 1) {
+        } else if (num == 1 && tokens[0] == "about") {
             About();
-        } else if (tokens[0] == "change" && tokens[1] == "password" && num == 2) {
+        } else if (num == 2 && tokens[0] == "change" && tokens[1] == "password") {
             Change_Password();
-        } else if (tokens[0] == "help" && num == 1) {
+        } else if (num == 1 && tokens[0] == "help") {
             Help();
-        } else if (tokens[0] == "clean" && num == 1) {
+        } else if (num == 1 && tokens[0] == "clean") {
             Clean();
+        }else if(num == 1 && tokens[0] == "exit"){
+            Ather_Exit();
         } else {
             cout << "未知指令，请重新输入" << '\n';
             cout.flush();
