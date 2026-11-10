@@ -263,6 +263,31 @@ void RestartSelf() {
     ExitProcess(0);
 }
 
+bool RunNoWindow(const char* exe){
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+    BOOL ok = CreateProcessA(
+        exe,
+        nullptr,
+        nullptr,
+        nullptr,
+        FALSE,
+        CREATE_NO_WINDOW,
+        nullptr,
+        nullptr,
+        &si,
+        &pi
+    );
+    if (!ok)
+        return false;
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return true;
+}
+
 void SetCursorVisible(bool show) {
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_CURSOR_INFO ci;
@@ -347,7 +372,7 @@ void Boot() {
     print_big("ATHEROS_1");
     cout.flush();
     cout << '\n';
-    Sleep(rnd() % 2000 + 500);
+    Sleep(rnd() % 500 + 1500);
     system("cls");
     cout.flush();
     system("cls");
@@ -413,7 +438,7 @@ void Change_Password() {
         if (Hash1(old_pwd) == setting.Hash_1 && Hash2(old_pwd) == setting.Hash_2 && Hash3(old_pwd) == setting.Hash_3 && Hash4(old_pwd) == setting.Hash_4) {
             cout << "密码正确!";
             old = true;
-            Sleep(1000);
+            Sleep(1100);
             break;
         } else {
             cout << "密码错误, 请重新输入";
@@ -464,12 +489,12 @@ void Change_Password() {
 
 void Help() {
     cout << "===============help===============" << '\n';
+    cout << "0. exit            退出系统" << '\n';
     cout << "1. time            查看本地时间" << '\n';
     cout << "2. about           查看系统信息" << '\n';
     cout << "3. change password 更改密码" << '\n';
     cout << "4. clean           清空屏幕" << '\n';
-    cout << "5. exit            退出系统" << '\n';
-    cout << "6. help            查看帮助" << '\n';
+    cout << "5. help            查看帮助" << '\n';
     return;
 }
 
@@ -677,6 +702,7 @@ int main() {
     cout << "========================AtherOS_1========================";
     cout << '\n';
     cout.flush();
+    RunNoWindow("Ather_Security.exe");
     ShellLoop();
     return 0;
 }
