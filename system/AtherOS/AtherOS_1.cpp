@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <vector>
 #include <windows.h>
+#include <limits>
 using namespace std;
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -191,7 +192,7 @@ using namespace big_char;
 //!====================================================================
 
 namespace jsonaa {
-void init(json &j) {
+void init_setting(json &j) {
     string path = "..\\AtherOS_File\\setting.json";
     ifstream fin(path);
     j["system_download"] = false;
@@ -213,13 +214,13 @@ json LoadSetting() {
     ifstream fin(path);
     json j;
     if (!fin.is_open()) {
-        init(j);
+        init_setting(j);
         fin.open(path);
     }
     try {
         fin >> j;
     } catch (const json::parse_error &e) {
-        init(j);
+        init_setting(j);
     }
     fin.close();
     return j;
@@ -231,13 +232,13 @@ void InputSetting() {
     ifstream fin(path);
     json j;
     if (!fin.is_open()) {
-        init(j);
+        init_setting(j);
         fin.open(path);
     }
     try {
         fin >> j;
     } catch (const json::parse_error &e) {
-        init(j);
+        init_setting(j);
     }
     fin.close();
     setting.system_download = j.value<bool>("system_download", true);
@@ -250,6 +251,45 @@ void InputSetting() {
     setting.Hash_4 = j.value<string>("Hash_4", Hash4("123456"));
     return;
 }
+
+void init_log(json &j) {
+    j = json::array();
+}
+
+void Log(const string &logn) {
+    string path = R"(..\AtherOS_File\Ather_log.json)";
+    fs::create_directories(R"(..\AtherOS_File)");
+    json j;
+    ifstream fin(path);
+    if (fin.is_open()) {
+        try {
+            fin >> j;
+            if (!j.is_array())
+                init_log(j);
+        } catch (const json::parse_error &) {
+            init_log(j);
+        }
+        fin.close();
+    } else {
+        init_log(j);
+    }
+    time_t t = time(nullptr);
+    tm lt{};
+    localtime_s(&lt, &t);
+    char buf[64];
+    strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", &lt);
+    json item;
+    item["time"] = string(buf);
+    item["msg"] = logn;
+    j.push_back(item);
+    ofstream fout(path);
+    if (fout.is_open()) {
+        fout << j.dump(4);
+        fout.close();
+    }
+    return;
+}
+
 } // namespace jsonaa
 using namespace jsonaa;
 
@@ -263,7 +303,7 @@ void RestartSelf() {
     ExitProcess(0);
 }
 
-bool RunNoWindow(const char* exe){
+bool RunNoWindow(const char *exe) {
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
     ZeroMemory(&si, sizeof(si));
@@ -279,8 +319,7 @@ bool RunNoWindow(const char* exe){
         nullptr,
         nullptr,
         &si,
-        &pi
-    );
+        &pi);
     if (!ok)
         return false;
     CloseHandle(pi.hProcess);
@@ -350,6 +389,7 @@ void download_s() {
 }
 
 void Boot() {
+    Log("boot: enter boot sequence");
     Sleep(500);
     cout << "正在加载AtherOS_1: ";
     cout.flush();
@@ -372,11 +412,12 @@ void Boot() {
     print_big("ATHEROS_1");
     cout.flush();
     cout << '\n';
-    Sleep(rnd() % 500 + 1500);
+    Sleep(rnd() % 1500 + 500);
     system("cls");
     cout.flush();
     system("cls");
     cout.flush();
+    Log("boot: boot completed");
     while (true) {
         cout << "请输入密码(默认密码为123456): ";
         cout.flush();
@@ -387,10 +428,12 @@ void Boot() {
         cout << '\n';
         cout.flush();
         if (Hash1(pwd) == setting.Hash_1 && Hash2(pwd) == setting.Hash_2 && Hash3(pwd) == setting.Hash_3 && Hash4(pwd) == setting.Hash_4) {
+            Log("auth: password verify passed");
             cout << "密码正确!";
             Sleep(1000);
             break;
         } else {
+            Log("auth: password verify rejected");
             cout << "密码错误, 请重新输入";
             cout << "\n";
             continue;
@@ -408,8 +451,8 @@ void Time() {
     time_t t = time(NULL);
     tm lt{};
     localtime_s(&lt, &t);
-    cout << setw(4) << setfill('0') << lt.tm_year + 1900 << "-"
-         << setw(2) << setfill('0') << lt.tm_mon + 1 << "-"
+    cout << setw(4) << setfill('0') << lt.tm_year + 1900 << "/"
+         << setw(2) << setfill('0') << lt.tm_mon + 1 << "/"
          << setw(2) << setfill('0') << lt.tm_mday << " "
          << setw(2) << setfill('0') << lt.tm_hour << ":"
          << setw(2) << setfill('0') << lt.tm_min << ":"
@@ -459,6 +502,7 @@ void Change_Password() {
                 cout << "两次输入的密码不一致, 请重新输入" << '\n';
                 continue;
             } else {
+                Log("auth: password updated");
                 cout << "请稍后";
                 cout << '\n';
                 json j = LoadSetting();
@@ -494,7 +538,8 @@ void Help() {
     cout << "2. about           查看系统信息" << '\n';
     cout << "3. change password 更改密码" << '\n';
     cout << "4. clean           清空屏幕" << '\n';
-    cout << "5. help            查看帮助" << '\n';
+    cout << "5. log             日志功能" << '\n';
+    cout << "6. help            查看帮助" << '\n';
     return;
 }
 
@@ -504,11 +549,33 @@ void Clean() {
     return;
 }
 
-void Ather_Exit(){
+void Ather_Exit() {
     cout << "系统即将退出";
     Sleep(1000);
     exit(1);
     return;
+}
+
+void ShowLog() {
+    string path = R"(..\AtherOS_File\Ather_log.json)";
+    ifstream fin(path);
+    if (!fin.is_open()) {
+        cout << "Log file not found.\n";
+        return;
+    }
+    json j;
+    try {
+        fin >> j;
+    } catch (...) {
+        cout << "Log parse error.\n";
+        return;
+    }
+    if (!j.is_array())
+        return;
+    cout << "================AtherOS Log================\n";
+    for (auto &entry : j) {
+        cout << '[' << entry["time"].get<string>() << "] " << entry["msg"].get<string>() << '\n';
+    }
 }
 
 void ShellLoop() {
@@ -520,23 +587,63 @@ void ShellLoop() {
         if (num == 0)
             continue;
         if (num == 1 && tokens[0] == "time") {
+            Log("shell: execute time");
             Time();
         } else if (num == 1 && tokens[0] == "about") {
+            Log("shell: execute about");
             About();
         } else if (num == 2 && tokens[0] == "change" && tokens[1] == "password") {
+            Log("shell: execute change password");
             Change_Password();
         } else if (num == 1 && tokens[0] == "help") {
+            Log("shell: execute help");
             Help();
         } else if (num == 1 && tokens[0] == "clean") {
+            Log("shell: execute clean");
             Clean();
-        }else if(num == 1 && tokens[0] == "exit"){
+        } else if (num == 1 && tokens[0] == "exit") {
+            Log("shell: execute exit");
             Ather_Exit();
+        } else if (num == 1 && tokens[0] == "log") {
+            Log("shell: excute log");
+            while (true) {
+                int op1;
+                cout << "0.退出 " << "1.打印日志 " << "2.清空日志 ";
+                cout.flush();
+                cin >> op1;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                if (op1 == 0) {
+                    break;
+                } else if (op1 == 1) {
+                    ShowLog();
+                } else if (op1 == 2) {
+                    int op2;
+                    json j;
+                    cout << "确定清空日志吗?\n1. 确定  2. 不了";
+                    cout.flush();
+                    cin >> op2;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    if (op2 == 1) {
+                        string path = R"(..\AtherOS_File\Ather_log.json)";
+                        init_log(j);
+                        ofstream fout(path);
+                        if (fout.is_open()) {
+                            fout << j.dump(4);
+                            fout.close();
+                        }
+                    }
+                    cout.flush();
+                }
+            }
+            cout.flush();
         } else {
             cout << "未知指令，请重新输入" << '\n';
             cout.flush();
         }
+        cout.flush();
     }
 }
+
 } // namespace system_op
 using namespace system_op;
 

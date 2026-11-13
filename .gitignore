@@ -9,6 +9,7 @@
 # 临时备份文件
 *.bak
 *.tmp
+system/AtherOS_File/Ather_log.json
 
 # VS Code
 .vscode/

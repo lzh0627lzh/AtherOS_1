@@ -169,7 +169,7 @@ void SaveSetting(const SettingData &s) {
     fout.close();
 }
 
-void init(json &j) {
+void init_setting(json &j) {
     j["system_download"] = false;
     j["AtherOS_version"] = "1.0.1(2610.1030)";
     j["AtherOS_vnum"] = 1011;
@@ -186,13 +186,13 @@ void LoadSetting(SettingData &out) {
     ifstream fin(SET_PATH);
     json j;
     if (!fin.is_open()) {
-        init(j);
+        init_setting(j);
         fin.open(SET_PATH);
     }
     try {
         fin >> j;
     } catch (const json::parse_error &) {
-        init(j);
+        init_setting(j);
         fin.open(SET_PATH);
         fin >> j;
     }
